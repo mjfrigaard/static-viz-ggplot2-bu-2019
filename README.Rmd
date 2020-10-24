@@ -684,7 +684,7 @@ We can see DC has the highest population density, and also has a high premium. N
 This was a very brief tutorial of the `ggplot2` package, so I recommend learning more about the package by typing `library(help = "ggplot2")` into your R console, checking out the [ggplot2](http://ggplot2.tidyverse.org/reference/ggplot2-package.html) tidyverse page, or purchasing the [ggplot2 book](https://www.amazon.com/ggplot2-Elegant-Graphics-Data-Analysis/dp/331924275X/ref=sr_1_1?s=books&ie=UTF8&qid=1504615645&sr=1-1&keywords=ggplot2). 
 
 ```{r create-index.html, eval=FALSE}
-knitr::knit(input = "README.Rmd", output = "docs/index.html")
+rmarkdown::render(input = "README.Rmd", output_file = "docs/index.html")
 ```
 
 
