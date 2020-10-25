@@ -55,9 +55,11 @@ base::options(
 First, load the `tidyverse` and other packages.
 
 ```{r packages, message=FALSE, warning=FALSE}
-suppressWarnings(suppressMessages(library(tidyverse)))
-suppressWarnings(suppressMessages(library(magrittr)))
-suppressWarnings(suppressMessages(library(ggrepel)))
+library(tidyverse)
+library(ggrepel)
+library(janitor)
+library(xml2)
+library(rvest)
 ```
 
 The [`tidyverse`](http://tidyverse.org/) is a collection of R packages developed by RStudio's Chief Scientist [Hadley Wickham](http://hadley.nz/). These packages work well together as part of larger data analysis pipeline. To learn more about these tools and how they work together, read [R for data science](http://r4ds.had.co.nz/). 
@@ -122,7 +124,7 @@ ggp_num_drivers <- BadDrivers %>%
 ggp_num_drivers + labs_num_drivers
 ```
 
-### Tip: Naming conventions
+## Tip: Naming conventions
 
 If you're programming in R, you'll be forced to start thinking about how to name all of the objects you're creating. They'll be data frames, lists, vectors, functions, urls, etc. floating around in your working environment, and you will want to know how to name these things. Having a minimal set of standards will help keep you organized and also make collaborating with you much easier. 
 
@@ -262,7 +264,7 @@ ggp_state_X_num_drivers_point <- BadDrivers %>%
 
 By sorting the position of the points in a organized way, we provide a clearer picture of the relationship between these two variables. This is helpful when we are ordering numerical data by categorical or discrete variables. 
 
-### Choosing the right geoms & aesthetics
+## Choosing the right geoms & aesthetics
 
 Ok, now that we have some `ggplot2` basics down, we can start using `geom`s to add layers to build better graphs. We'll start by shifting gears and looking at the relationship between between `perc_alcohol` (the percentage of drivers involved in fatal collisions who were alcohol-impaired) and `insurance_premiums` (car insurance premiums ($)). 
 
@@ -366,7 +368,7 @@ That looks better. But we still can't tell what `state` each point represents. M
 
 For example, what if we categorized the states into `region`? That might make the information easier to digest.
 
-### TIP: Adding new variables
+## TIP: Adding new variables
 
 Lets combine the `state`-level data into `region` using `Midwest`, `Northeast`, `South`, and `West`. Below are vectors for each US state `region`. 
 
@@ -480,15 +482,11 @@ ggp_alch_premiums_state_point_txt_facetw +
   ggp_alch_premiums_point_02
 ```
 
-### Tip: Adding new data
+## Tip: Scraping wikipedia data
 
 This shows us the `Northeast` and `South` have the highest number for Insurance premiums (specifically DC, Louisiana, New Jersey and New York). The `Midwest` has the lowest Insurance premiums (with the exception of Michigan), despite having quite a few states with high numbers of alcohol-impared fatal collisions. Both the Midwest and the West have a lot of wide open spaces, and the Northeast and South have states with some of the highest population density. See the [data here](https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population_density).
 
 ```{r scrape-wiki-data}
-# packages -----------------------------------------------------------------
-library(xml2)
-library(rvest)
-
 # wiki url ----------------------------------------------------------------
 # read more here: https://xml2.r-lib.org/
 wiki_url <- "https://en.wikipedia.org/wiki/List_of_states_and_territories_of_the_United_States_by_population_density"
@@ -513,6 +511,34 @@ WikiPopDensRAW %>% dplyr::glimpse(78)
 ```
 
 We can see these first two rows were actually the column names, so we can do a quick wrangling trick to paste them to the existing names. 
+
+```{r CleanColNames}
+# store names
+raw_wiki_names <- WikiPopDensRAW %>% 
+  janitor::clean_names() %>% 
+  names()
+# get the names in row 2
+WikiPopDensRAW %>% 
+  row_to_names(row_number = 1) %>% 
+  clean_names() %>% 
+  names() -> raw_wiki_names_02
+# put these in a tibble
+WikiNames <- tibble(raw_wiki_names, raw_wiki_names_02)
+WikiNames %>% 
+  mutate(
+    # remove numbers 
+     raw_wiki_names = str_remove_all(raw_wiki_names, "[0-9]+"),
+     # remove trailing underscores
+     raw_wiki_names = str_remove_all(raw_wiki_names, "_$"),
+     # lowercase
+     raw_wiki_names = str_to_lower(raw_wiki_names)) %>% 
+    # stick these together
+  tidyr::unite(col = "new_colname", 
+               sep = "_") -> CleanColNames
+CleanColNames
+```
+
+Another option for wrangling is below:
 
 ```{r NewColnames}
 # add a simple id to pivot on
@@ -641,7 +667,11 @@ ggplot2::ggplot(aes(
   labs_alch_premiums_point_pop_03
 ```
 
-This is looking better, but we want to remove any unnecessary elements that take away from the data display. The `ggplot2::theme_minimal()` function removes a lot of the extra graph elements to give a cleaner look.
+This is looking better, but we want to remove any unnecessary elements that take away from the data display. 
+
+## Use custom themes
+
+The `ggplot2::theme_minimal()` function removes a lot of the extra graph elements to give a cleaner look.
 
 ```{r size-point}
 ggp_alch_premiums_state_point_txt_facetw_pop <- BadDriversWiki %>% 
@@ -673,6 +703,48 @@ ggplot2::ggplot(aes(
 ggp_alch_premiums_state_point_txt_facetw_pop
 ```
 
+We can also use themes from other packages. Below is an example from the `hrbrthemes` package. 
+
+```{r theme_set-theme_ipsum_ps}
+ggplot2::theme_set(hrbrthemes::theme_ipsum_ps(
+  base_size = 8,
+  strip_text_size = 9,
+  axis_title_size = 10,
+  plot_title_size = 14,
+  subtitle_size = 10,
+  base_family = "AndaleMono",
+  strip_text_family = "TitilliumWeb-Regular",
+  axis_title_family = "TitilliumWeb-Regular",
+  subtitle_family = "TitilliumWeb-Regular",
+  plot_title_family = "JosefinSans-Regular"
+))
+```
+
+```{r use-theme}
+BadDriversWiki %>% 
+ggplot2::ggplot(aes(
+    x = perc_alcohol, # position on x
+    y = insurance_premiums # position on y
+  )) +
+  # add the points
+  ggplot2::geom_point(aes(color = region,
+                          # add population density here
+                          size = population_density_perkm2),
+                      # also adjust the opacity
+                      alpha = 3/5,
+                      # no legend
+                      show.legend = FALSE) +
+  # add the text
+  ggrepel::geom_text_repel(aes(
+      label = state), # this will be the 'state' text
+    show.legend = FALSE, # still no legend
+    size = 2) + # size of the text
+  # facet wrap on the region
+  ggplot2::facet_wrap(. ~ region) +
+  # add the labels
+  labs_alch_premiums_point_pop_03
+```
+
 Now we have a graph that combines the `position`s, `color`s, `size`, `lab`els, and `facet`s to display the relationship between insurance premiums, the percent of alcohol-impaired fatal collisions, and population density by region and state. 
 
 ### What can we say about the relationships? 
@@ -683,7 +755,7 @@ We can see DC has the highest population density, and also has a high premium. N
 
 This was a very brief tutorial of the `ggplot2` package, so I recommend learning more about the package by typing `library(help = "ggplot2")` into your R console, checking out the [ggplot2](http://ggplot2.tidyverse.org/reference/ggplot2-package.html) tidyverse page, or purchasing the [ggplot2 book](https://www.amazon.com/ggplot2-Elegant-Graphics-Data-Analysis/dp/331924275X/ref=sr_1_1?s=books&ie=UTF8&qid=1504615645&sr=1-1&keywords=ggplot2). 
 
-```{r create-index.html, eval=FALSE}
+```{r create-index.html, eval=FALSE, results='hide'}
 rmarkdown::render(input = "README.Rmd", output_file = "docs/index.html")
 ```
 
