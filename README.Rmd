@@ -43,6 +43,10 @@ base::options(
 )
 ```
 
+# Source
+
+Access these data and files [here](https://github.com/mjfrigaard/static-viz-ggplot2-bu-2019)
+
 # Objectives
 
 1. The grammar of graphics  
