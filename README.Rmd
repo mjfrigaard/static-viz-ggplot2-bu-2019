@@ -1,5 +1,5 @@
 ---
-title: "BU - ggplot2 static visualizations"
+title: "ggplot2 static visualizations"
 author: "Martin Frigaard"
 date: "Oct, 2019"
 output: 
@@ -45,7 +45,7 @@ base::options(
 
 # Source
 
-Access these data and files [here](https://github.com/mjfrigaard/static-viz-ggplot2-bu-2019)
+This presentation was originally given at Boston University's Data + Narrative workshop (2019). Access these data and files [here](https://github.com/mjfrigaard/static-viz-ggplot2-bu-2019)
 
 # Objectives
 
